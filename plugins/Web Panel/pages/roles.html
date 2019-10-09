@@ -1,0 +1,564 @@
+<html>
+
+<head>
+    <title>??? Roles ・ Starie</title>
+    <link rel="shortcut icon" href="favicon.png" />
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.0/jquery.min.js"></script>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.1/css/all.css" integrity="sha384-50oBUHEmvpQ+1lW4y57PTFmhCaXp0ML5d60M1M7uH2+nqUivzIebhndOJK28anvf" crossorigin="anonymous">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+    <style>
+            .user-avatar, .guild-avatar {
+                border-radius: 50%;
+                width: 32px;
+                height: 32px;
+            }
+            
+            .container-dark {
+                background-color: #2c2f33;
+            }
+            
+            .bg-dark-theme {
+                background-color: #23272a;
+            }
+            
+            .nav-dark-theme {
+                color: #fff;
+            }
+    
+            .active {
+                border-bottom: 2px solid orange!important;
+            }
+            
+            .box {
+                cursor: pointer;
+                width: 350px;
+                margin-bottom: 32px;
+                min-height: 120px;
+                padding: 25px 30px;
+                display: flex;
+                margin-left: 45px;
+                -webkit-box-orient: horizontal;
+                flex-direction: row;
+                background-color: #383e42;
+                box-shadow: 0 0 10px rgba(0,0,0,.2);
+                border-radius: 3px;
+                transition: opacity 175ms ease-out;
+                position: relative;
+                overflow:none;
+            }
+    
+            .box-list {
+                display: flex;
+                -webkit-box-orient: horizontal;
+                flex-direction: row;
+                -webkit-box-align: center;
+                align-items: center;
+                -webkit-box-pack: justify;
+                width: 100%;
+                flex-wrap: wrap;
+            }
+    
+            .box-description {
+                display: flex;
+                -webkit-box-orient: vertical;
+                flex-direction: column;
+            }
+    
+            .box-left {
+                width: 60px;
+                display: flex;
+                -webkit-box-orient: vertical;
+                flex-direction: column;
+            }
+    
+            .box-right {
+                -webkit-box-flex: 1;
+                flex: 1;
+                display: flex;
+            }
+    
+            .box-title {
+                color: white;
+                font-size: 20px;
+                line-height: 1;
+                font-weight: 600;
+                margin-left: 8px;
+            }
+    
+            .box-subtext {
+                content: #AAA;
+                font-size: 14px;
+                color: rgba(255, 255, 255, .62);
+                margin-top: 15px;
+                line-height: 1.4;
+                margin-left: 15px;
+            }
+    
+            .box p {
+                text-align: center;
+                font-size: 16px;
+                font-weight: bold;
+                padding-top: 12px;
+            }
+    
+            .box .counter {
+                font-size: 24px;
+                font-weight: bolder;
+                margin-top: 5px;
+            }
+    
+            .box:hover .overlay {
+                width: 100%;
+                transition: 0.5s;
+            }
+    
+            .box:hover .overlay span {
+                opacity: 1;
+                transition: 0.6s;
+            }
+            
+            .box .overlay span {
+                opacity: 0;
+                font-size: 20px;
+                font-weight: bold;
+            }
+    
+            .box .overlay {
+                width: 0%;
+                transition: 0.2s;
+                background-color: #7289da;
+                z-index: 1;
+                position: absolute;
+                left: 0;
+                top: 0;
+                padding-top: 40px;
+                height: 100%;
+                text-align: center;
+            }
+    
+            .box-long {
+                max-width: none;
+            }
+    
+            .box:hover {
+                opacity: 0.8;
+                cursor: pointer;
+                transition: 0.2s;
+            }
+    
+            .spinning {
+                animation-name: spin;
+                animation-duration: 5000ms;
+                animation-iteration-count: infinite;
+                animation-timing-function: linear; 
+            }
+    
+            @keyframes spin {
+                from {
+                    transform:rotate(0deg);
+                }
+                to {
+                    transform:rotate(360deg);
+                }
+            }
+        </style>
+
+    <script>
+        var server, members, roles, open_user, filtered_members = [], canEditRoles; // Server list cache.
+
+        function GotoHome()
+        {
+            window.location.href = `${window.location.href.replace("/roles", "")}`;
+        }
+        
+        function UpdateTitle()
+        {
+            $("title")[0].innerHTML = $("title")[0].innerHTML.replace("???", server.name); // Replace it with the server's name.
+        }
+
+        function FetchServer(id)
+        {
+            $.ajax({
+                url: `/guild/${id}`
+            }).done((data) => {
+                server = data; // Apply the information to the server cache.
+                canEditRoles = server.canEditRoles; // See if they can edit roles.
+
+                if (!canEditRoles) // Hide the role adder if you can't add roles.
+                    $("#role_editor")[0].style.display = "none";
+
+                UpdateTitle(); // Update the title card.
+            });
+
+            $.ajax({
+                url: `/guild/${id}/roles`
+            }).done((data) => {
+                roles = data; // Apply the information to the server cache.
+                LoadRoles(); // Update the members.
+            });
+
+            return true;
+        }
+
+        function UpdateTitle()
+        {
+            $("title")[0].innerHTML = $("title")[0].innerHTML.replace("???", server.name); // Replace it with the server's name.
+            $(".guild")[0].innerHTML = $(".guild")[0].innerHTML.replace("???", server.name);
+            $(".guild")[0].childNodes[0].src = `https://cdn.discordapp.com/icons/${server.id}/${server.icon}.png`;
+        }
+
+        function RemoveRole(id)
+        {
+            $.ajax({
+                url: `/guild/${server.id}/${open_user}/removerole/${id}`
+            }).done((data) => {
+                if (data.statusCode == 500){
+                    $("#error")[0].innerHTML = `${data.content["name"]}: ${data.content["message"]}`
+                    $("#error")[0].style.display = "block";
+                    
+                    setTimeout(() => {
+                        $("#error")[0].style.display = "none";
+                    }, 5000);
+                }
+                else
+                    LoadRoles(); // Load the user's roles again.
+            });
+        }
+
+        function LoadRoles()
+        {
+            $("#role_list")[0].innerHTML = ""; // Clear the role list.
+
+                roles.forEach((role) => {
+                    if (role.name == "@everyone")
+                        return;
+
+                    var row = document.createElement("tr");
+                    var name = document.createElement("p"), color = document.createElement("p"), del = document.createElement("button");
+                    var column = document.createElement("td"), column2 = document.createElement("td"), column3 = document.createElement("td");
+
+                    name.innerHTML = role.name;
+                    color.innerHTML = role.color;
+                    color.style.color = role.color;
+                    del.innerHTML="Delete";
+                    del.className = "btn btn-danger"
+                    
+                    row.appendChild(column);
+                    row.appendChild(column2);
+                    row.appendChild(column3);
+
+                    column.appendChild(name);
+                    column2.appendChild(color);
+                    column3.appendChild(del);
+
+                    $("#role_list")[0].appendChild(row); // Append the button.
+                });
+        }
+
+        function ApplyChanges()
+        {
+            $.ajax({
+                url: `/guild/${server.id}/${open_user}/nickname/${$("#user_nickname")[0].value}`,
+                method: "POST"
+            }).done((data) => {
+                if (data.statusCode == 500){
+                    var member = members.filter((member) => member.id == open_user)[0]; // Find the proper user.
+                    $("#user_nickname")[0].value = member.nickname ? member.nickname : member.username; // Update the user's nickname display.
+                    
+                    $("#error")[0].innerHTML = `${data.content.name}: ${data.content.message}`; // Send that it went by well.
+                    $("#error")[0].style.display = "block"; // Set the display to block.
+
+                    setTimeout(() => {
+                        $("#error")[0].style.display = "none"; // Hide the message after a short period.
+                    }, 5000);
+                }
+                else
+                {
+                    $("#error")[0].innerHTML = data.content; // Send that it went by well.
+                    $("#error")[0].style.display = "block"; // Set the display to block.
+                    $("#error")[0].className = "alert alert-success"; // Change the alert type to success.
+
+                    setTimeout(() => {
+                        $("#error")[0].className = "alert alert-danger"; // Reset the alert type.
+                        $("#error")[0].style.display = "none"; // Hide the message after a short period.
+                    }, 5000);
+                }
+            });
+        }
+
+        function AddRole(id)
+        {
+            $.ajax({
+                url: `/guild/${server.id}/${open_user}/addrole/${id}`
+            }).done((data) => {
+                if (data.statusCode == 500){
+                    $("#error")[0].innerHTML = `${data.content["name"]}: ${data.content["message"]}`
+                    $("#error")[0].style.display = "block";
+                    
+                    setTimeout(() => {
+                        $("#error")[0].style.display = "none";
+                    }, 5000);
+                }
+                else
+                    LoadRoles(); // Load the user's roles again.
+            });
+        }
+
+        function LoadUser()
+        {
+            var member = members.filter((member) => member.id == open_user)[0]; // Find the proper user.
+            $("#user_nickname")[0].value = member.nickname ? member.nickname : member.username; // Update the user's nickname display.
+            LoadRoles(); // Load their roles.
+        }
+
+        function SearchUser(text)
+        {
+            var filtered_search = [];
+            
+            filtered_members.forEach((member) => {
+                if (member.username.toLowerCase().includes(text.toLowerCase())) // Push the member into it if it includes the search text.
+                    filtered_search.push(member);
+            });
+
+            UpdateMembers(filtered_search);
+        }
+
+        function CheckFilter(type)
+        {
+            switch (type) {
+                case "admin":
+                    return FilterByAdministrator();
+                case "staff":
+                    return FilterByStaff();
+                case "nothing":
+                    filtered_members = members; // Reset the filtered list.
+                    UpdateMembers(members);
+
+                    if ($("#user_search")[0].value != "") // Reapply the search terms when the filter is updated.
+                        SearchUser($("#user_search")[0].value);
+
+                    break;
+            }
+        }
+
+        function FilterByAdministrator()
+        {
+            filtered_members = [];
+
+            for (var member of members) {
+                if (member["isAdministrator"] == true)
+                    filtered_members.push(member);
+            }
+
+            UpdateMembers(filtered_members);
+
+            if ($("#user_search")[0].value != "") // Reapply the search terms when the filter is updated.
+                SearchUser($("#user_search")[0].value);
+        }
+
+        function FilterByStaff()
+        {
+            filtered_members = [];
+            
+            for (var member of members) {
+                if (member["isStaff"] == true)
+                    filtered_members.push(member);
+            }
+
+            UpdateMembers(filtered_members);
+
+            if ($("#user_search")[0].value != "") // Reapply the search terms when the filter is updated.
+                SearchUser($("#user_search")[0].value);
+        }
+
+        function ReSync()
+        {
+            $("#syncIcon")[0].className = "fas fa-sync spinning"; // Animate it.
+
+            setTimeout(() => {
+                members = []; // Clear the member cache.
+                roles = []; // Clear the role cache.
+
+                FetchServer(window.location.href.split("/")[4]);
+
+                $("#syncIcon")[0].className = "fas fa-check"; // Stop the animation and make it a check.
+                $("#syncIcon")[0].style.color = "#00FF11"; // Set it to green.
+
+                // Reset it to the sync icon after a couple seconds.
+                setTimeout(() => {
+                    $("#syncIcon")[0].className = "fas fa-sync";
+                    $("#syncIcon")[0].style.color = ""; // Set it to green.
+                }, 5000);
+            }, 2000)
+        }
+
+        setInterval(() => {
+            ReSync(); // Resync every 25 seconds.
+        }, 25000);
+
+        function UpdateMembers(member_list)
+        {
+            $("#members")[0].innerHTML = ""; // Clear it.
+
+            member_list.forEach((member) => {
+                var server = document.createElement("div"), link = document.createElement("a"), img = document.createElement("img"), overlay = document.createElement("div"), overlay_text = document.createElement("span"); // Create an option.
+                server.className = "box"; // Set the name.
+                img.src = member.avatar.length > 1 ? `https://cdn.discordapp.com/avatars/${member.id}/${member.avatar}.png` : `https://cdn.discordapp.com/embed/avatars/${member.avatar}.png`; // Set the icon to the icon URL.
+                img.width = 128;
+
+                server.onclick = () =>{
+                    open_user = member.id; // Set the opened user.
+                    $("#manage_user").modal(); // Pop open the modal.
+                    LoadUser(open_user); // Load the user and apply the placeholders.
+                }
+
+                overlay_text.innerHTML = member.tag; // Set the overlay text.
+                overlay.className = "overlay"; // Create the overlay class.
+                overlay.appendChild(overlay_text); // Overlay the text.
+
+                var boxleft = document.createElement("div"), boxright = document.createElement("div");
+                boxleft.className = "box-left";
+                boxleft.style.width = "128px";
+                boxright.className = "box-right";
+
+                var boxtitle = document.createElement("div"), boxsubtext = document.createElement("div");
+                boxtitle.innerHTML = member.tag;
+                boxtitle.className = "box-title";
+                boxsubtext.className = "box-subtext";
+
+                var boxdescription = document.createElement("div");
+                boxdescription.className = "box-description";
+
+                boxleft.appendChild(img);
+                link.appendChild(overlay);
+                server.appendChild(link);
+                server.appendChild(boxleft);
+                server.appendChild(boxright);
+                boxright.appendChild(boxdescription);
+                boxdescription.appendChild(boxtitle);
+
+                //var verifiedIcon = document.createElement("img");
+                //verifiedIcon.src = "https://png.pngtree.com/svg/20170622/verify_1339541.png";
+                //verifiedIcon.width = "24";
+
+                //boxsubtext.appendChild(verifiedIcon);
+                boxdescription.appendChild(boxsubtext);
+
+                $("#members")[0].appendChild(server); // Add the option to the selector.
+            });
+        }
+
+        function KickMember()
+        {
+            $.ajax({
+                url: `/guild/${server.id}/${open_user}/kick`
+            }).done((data) => {
+                if (data.statusCode == 500){
+                    $("#error")[0].innerHTML = `${data.content["name"]}: ${data.content["message"]}`
+                    $("#error")[0].style.display = "block";
+                    
+                    setTimeout(() => {
+                        $("#error")[0].style.display = "none";
+                    }, 5000);
+                }
+                else
+                    LoadRoles(); // Load the user's roles again.
+            });
+        }
+
+        function openSettings()
+        {
+            window.location.href = `http://${window.location.hostname}:${window.location.port}/manage/${server.id}/settings`;
+        }
+
+        FetchServer(window.location.href.split("/")[4]);
+    </script>
+</head>
+
+<body class="container-dark">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark-theme">
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+            <ul class="navbar-nav mr-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="/"><i class="fas fa-arrow-left"></i></a>
+                </li>
+                <li class="nav-item active">
+                    <a class="nav-link" href="#"><i class="fas fa-home"></i></a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#" onclick="openMembers()"><i class="fas fa-users"></i></a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#" onclick="openPermissions()"><i class="fas fa-user-friends"></i></a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#" onclick="openSettings()"><i class="fas fa-cog"></i></a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#" onclick="ReSync()"><i id="syncIcon" class="fas fa-sync"></i></a>
+                </li>
+            </ul>
+            <form class="form-inline my-2 my-lg-0">
+                <div class="dropdown">
+                    <button class="btn nav-dark-theme dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        <span class="user"><img src="" class="user-avatar"/></span>
+                    </button>
+                    <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                        <a class="dropdown-item" href="#">Logout</a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </nav>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark-theme" style="background-color: #383e42">
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+            <ul class="navbar-nav mr-auto">
+                <div class="dropdown">
+                    <button class="btn nav-dark-theme dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        <span class="guild"><img src="" class="guild-avatar"/> ???</span>
+                    </button>
+                    <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                        <a class="dropdown-item" href="#">Remove From Server</a>
+                    </div>
+                </div>
+            </ul>
+
+            <ul class="navbar-nav mr-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="#" onclick="GotoHome()">Home</a>
+                </li>
+
+                <li class="nav-item active">
+                    <a class="nav-link" href="#">Roles</a>
+                </li>
+            </ul>
+        </div>
+        
+    </nav>
+    <div class="container-fluid">
+        <br>
+        <table class="table table-dark">
+                <thead>
+                  <tr>
+                    <th scope="col">Name</th>
+                    <th scope="col">Color</th>
+                    <th scope="col">Action</th>
+                  </tr>
+                </thead>
+                <tbody id="role_list">
+                  <tr>
+                    <td>Test</td>
+                    <td style="color: #424245">#424245</td>
+                    <td><button class="btn btn-danger">Delete</button></td>
+                  </tr>
+                </tbody>
+              </table>
+    </div>
+</body>
+
+</html>

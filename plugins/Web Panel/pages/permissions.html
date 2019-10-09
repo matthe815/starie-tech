@@ -1,0 +1,736 @@
+<html>
+
+<head>
+    <title>Permissions ・ Starie</title>
+    <link rel="shortcut icon" href="favicon.png" />
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.0/jquery.min.js"></script>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.1/css/all.css" integrity="sha384-50oBUHEmvpQ+1lW4y57PTFmhCaXp0ML5d60M1M7uH2+nqUivzIebhndOJK28anvf" crossorigin="anonymous">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+    <style>
+        .user-avatar {
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+        }
+        
+        .container-dark {
+            background-color: #2c2f33;
+        }
+        
+        .bg-dark-theme {
+            background-color: #23272a;
+        }
+        
+        .nav-dark-theme {
+            color: #fff;
+        }
+        
+        .box {
+            margin-top: 20px;
+            margin-left: 8px;
+            margin-right: 8px;
+            padding-left: 0;
+            border-left: solid #7289da 5px;
+            height: 128px;
+            max-width: 128px;
+            background-color: #7289da;
+            transition: 0.1s;
+            box-shadow: 2px 2px 7px #000;
+        }
+        
+        .box p {
+            text-align: center;
+            font-size: 16px;
+            font-weight: bold;
+            padding-top: 12px;
+        }
+
+        .box .counter {
+            font-size: 24px;
+            font-weight: bolder;
+            margin-top: 5px;
+        }
+
+        .box:hover .overlay {
+            width: 100%;
+            transition: 0.5s;
+        }
+
+        .box:hover .overlay span {
+            opacity: 1;
+            transition: 0.6s;
+        }
+        
+        .box .overlay span {
+            opacity: 0;
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .box .overlay {
+            width: 0%;
+            transition: 0.2s;
+            background-color: #7289da;
+            z-index: 1;
+            position: absolute;
+            left: 0;
+            top: 0;
+            padding-top: 40px;
+            height: 100%;
+            text-align: center;
+        }
+
+        .small {
+            height: 48px;
+            width: 48px;
+            max-width: 48px!important;
+            background-size: 48px 48px;
+        }
+
+        .small img {
+            height: 48px;
+            width: 48px;
+        }
+
+        .box:hover .small .overlay {
+            width: 48px;
+            max-width: 48px;
+            transition: 0.5s;
+        }
+
+        .box-long {
+            max-width: none;
+        }
+
+        .box:hover {
+            opacity: 0.8;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .roleItem .blend span {
+            mix-blend-mode: difference;
+        }
+
+        .spinning {
+            animation-name: spin;
+            animation-duration: 5000ms;
+            animation-iteration-count: infinite;
+            animation-timing-function: linear; 
+        }
+
+        @keyframes spin {
+            from {
+                transform:rotate(0deg);
+            }
+            to {
+                transform:rotate(360deg);
+            }
+        }
+    </style>
+
+    <script>
+        var server, members, roles, open_user, filtered_members = [], canEditRoles; // Server list cache.
+
+        function getCookie(cname) {
+            var name = cname + "=";
+            var ca = document.cookie.split(';');
+
+            for(var i = 0; i < ca.length; i++) {
+                var c = ca[i];
+
+                while (c.charAt(0) == ' ') {
+                    c = c.substring(1);
+                }
+
+                if (c.indexOf(name) == 0) {
+                    return c.substring(name.length, c.length);
+                }
+            }
+            return "";
+        }
+        
+        function setCookie(cname, cvalue, exdays) {
+            var d = new Date();
+            d.setTime(d.getTime() + (exdays*24*60*60*1000));
+            var expires = "expires="+ d.toUTCString();
+            document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/";
+        }
+
+        GetUser();
+
+        function GetUser() {
+            $.ajax({
+                url: "/oauth/user",
+                method: "POST",
+                data: {"token": getCookie("token")}
+            }).done((data) => {
+                $(".user-avatar")[0].src = `https://cdn.discordapp.com/avatars/${data.id}/${data.avatar}.png`;
+            });
+        }
+
+        function GotoHome()
+        {
+            window.location.href = `${window.location.href.replace("/members", "")}`;
+        }
+        
+        function UpdateTitle()
+        {
+            $("title")[0].innerHTML = $("title")[0].innerHTML.replace("???", server.name); // Replace it with the server's name.
+        }
+
+        function FetchServer(id)
+        {
+            $.ajax({
+                url: `/guild/${id}`
+            }).done((data) => {
+                server = data; // Apply the information to the server cache.
+                canEditRoles = server.canEditRoles; // See if they can edit roles.
+
+                if (!canEditRoles) // Hide the role adder if you can't add roles.
+                    $("#role_editor")[0].style.display = "none";
+
+                UpdateTitle(); // Update the title card.
+            });
+
+            $.ajax({
+                url: `/guild/${id}/permissions`,
+                method: "POST",
+                data: {"token": getCookie("token")}
+            }).done((data) => {
+                members = data; // Apply the information to the server cache.
+                LoadRoles();
+            });
+            return true;
+        }
+
+        function UpdateTitle()
+        {
+            $("title")[0].innerHTML = $("title")[0].innerHTML.replace("???", server.name); // Replace it with the server's name.
+        }
+
+        function RemoveRole(id)
+        {
+            $.ajax({
+                url: `/guild/${server.id}/${open_user}/removerole/${id}`
+            }).done((data) => {
+                if (data.statusCode == 500){
+                    $("#error")[0].innerHTML = `${data.content["name"]}: ${data.content["message"]}`
+                    $("#error")[0].style.display = "block";
+                    
+                    setTimeout(() => {
+                        $("#error")[0].style.display = "none";
+                    }, 5000);
+                }
+                else
+                    LoadRoles(); // Load the user's roles again.
+            });
+        }
+
+        function LoadRoles()
+        {
+            $.ajax({
+                url: `/guild/${server.id}/webRoles`,
+                method: "POST",
+                data: {token: getCookie("token")}
+            }).done((data) => {
+               roles = data;
+               UpdateMembers(members); // Update the members.
+            });
+        }
+
+        function LoadRoles2()
+        {
+            $.ajax({
+                url: `/guild/${server.id}/webRoles`,
+                method: "POST",
+                data: {token: getCookie("token")}
+            }).done((data) => {
+               roles = data;
+               UpdateRoles(roles); // Update the members.
+            });
+        }
+
+        function ApplyChanges()
+        {
+            $.ajax({
+                url: `/guild/${server.id}/${open_user}/nickname/${$("#user_nickname")[0].value}`,
+                method: "POST"
+            }).done((data) => {
+                if (data.statusCode == 500){
+                    var member = members.filter((member) => member.id == open_user)[0]; // Find the proper user.
+                    $("#user_nickname")[0].value = member.nickname ? member.nickname : member.username; // Update the user's nickname display.
+                    
+                    $("#error")[0].innerHTML = `${data.content.name}: ${data.content.message}`; // Send that it went by well.
+                    $("#error")[0].style.display = "block"; // Set the display to block.
+
+                    setTimeout(() => {
+                        $("#error")[0].style.display = "none"; // Hide the message after a short period.
+                    }, 5000);
+                }
+                else
+                {
+                    $("#error")[0].innerHTML = data.content; // Send that it went by well.
+                    $("#error")[0].style.display = "block"; // Set the display to block.
+                    $("#error")[0].className = "alert alert-success"; // Change the alert type to success.
+
+                    setTimeout(() => {
+                        $("#error")[0].className = "alert alert-danger"; // Reset the alert type.
+                        $("#error")[0].style.display = "none"; // Hide the message after a short period.
+                    }, 5000);
+                }
+            });
+        }
+
+        function AddRole(name) 
+        {
+            $.ajax({
+                url: `/guild/${server.id}/webRoles/add`,
+                method: "POST",
+                data: {name, token: getCookie("token")}
+            }).done((data) => {
+                LoadRoles2()
+            });
+        }
+
+        function DeleteRole(id) 
+        {
+            console.log(id);
+
+            $.ajax({
+                url: `/guild/${server.id}/webRoles/remove`,
+                method: "POST",
+                data: {id, token: getCookie("token")}
+            }).done((data) => {
+                LoadRoles2()
+            });
+        }
+
+        function LoadUser()
+        {
+            var member = members.filter((member) => member.id == open_user)[0]; // Find the proper user.
+            $("#user_nickname")[0].value = member.nickname ? member.nickname : member.username; // Update the user's nickname display.
+            LoadRoles(); // Load their roles.
+        }
+
+        function SearchUser(text)
+        {
+            if (text.length < 3) {
+                $("#smembers")[0].innerHTML = "";
+                return;
+            }
+
+            $.ajax({
+                url: `/guild/${server.id}/members/search`,
+                method: "POST",
+                data: {"username": text, "token": getCookie("token")}
+            }).done((data) => {
+                console.log(data);
+                UpdateSearchMembers(data);
+            });
+        }
+
+        function CheckFilter(type)
+        {
+            switch (type) {
+                case "admin":
+                    return FilterByAdministrator();
+                case "staff":
+                    return FilterByStaff();
+                case "nothing":
+                    filtered_members = members; // Reset the filtered list.
+                    UpdateMembers(members);
+
+                    if ($("#user_search")[0].value != "") // Reapply the search terms when the filter is updated.
+                        SearchUser($("#user_search")[0].value);
+
+                    break;
+            }
+        }
+
+        function FilterByAdministrator()
+        {
+            filtered_members = [];
+
+            for (var member of members) {
+                if (member["isAdministrator"] == true)
+                    filtered_members.push(member);
+            }
+
+            UpdateMembers(filtered_members);
+
+            if ($("#user_search")[0].value != "") // Reapply the search terms when the filter is updated.
+                SearchUser($("#user_search")[0].value);
+        }
+
+        function FilterByStaff()
+        {
+            filtered_members = [];
+            
+            for (var member of members) {
+                if (member["isStaff"] == true)
+                    filtered_members.push(member);
+            }
+
+            UpdateMembers(filtered_members);
+
+            if ($("#user_search")[0].value != "") // Reapply the search terms when the filter is updated.
+                SearchUser($("#user_search")[0].value);
+        }
+
+        function ReSync()
+        {
+            $("#syncIcon")[0].className = "fas fa-sync spinning"; // Animate it.
+
+            setTimeout(() => {
+                members = []; // Clear the member cache.
+                roles = []; // Clear the role cache.
+
+                FetchServer(window.location.href.split("/")[4]);
+
+                $("#syncIcon")[0].className = "fas fa-check"; // Stop the animation and make it a check.
+                $("#syncIcon")[0].style.color = "#00FF11"; // Set it to green.
+
+                // Reset it to the sync icon after a couple seconds.
+                setTimeout(() => {
+                    $("#syncIcon")[0].className = "fas fa-sync";
+                    $("#syncIcon")[0].style.color = ""; // Set it to green.
+                }, 5000);
+            }, 2000)
+        }
+
+        setInterval(() => {
+            ReSync(); // Resync every 25 seconds.
+        }, 25000);
+
+        function UpdateMembers(member_list)
+        {
+            $("#members")[0].innerHTML = ""; // Clear it.
+
+            member_list.forEach((member) => {
+                var row = document.createElement("tr"), data1 = document.createElement("td"), data2 = document.createElement("td"), data3 = document.createElement("td"), data4 = document.createElement("td"), roleSelector = document.createElement("select"), avatar = document.createElement("img"), name = document.createElement("span");
+                avatar.src = member.user.avatar.length > 1 ? `https://cdn.discordapp.com/avatars/${member.user.id}/${member.user.avatar}.png` : `https://cdn.discordapp.com/embed/avatars/${member.user.avatar}.png`;
+                avatar.width = "64";
+                avatar.height = "64";
+
+                var authAvatar = document.createElement("img"), authorizer = document.createElement("span");
+                authAvatar.src = `https://cdn.discordapp.com/avatars/${member.authorizer.id}/${member.authorizer.avatar}.png`;
+                authAvatar.width = "64";
+                authAvatar.height = "64";
+                authorizer.innerHTML = member.authorizer.username || "Server";
+
+                var action1Link = document.createElement("a");
+                action1Link.href = "#";
+
+                action1Link.onclick = () => {
+                    RemoveUser(member.user.id);
+                }
+                
+                var action1 = document.createElement("i");
+                action1.className = "fas fa-times";
+
+                action1Link.appendChild(action1);
+
+                if (member.role != 0 && member.editable){
+                    roleSelector.className = "form-control";
+
+                    roles.forEach((role) => {
+                        var roleOption = document.createElement("option");
+                        roleOption.value = role.id;
+                        roleOption.innerHTML = role.name;
+
+                        if (member.role)
+                            roleOption.selected = role.id == member.role.id;
+
+                        roleSelector.appendChild(roleOption);
+                    });   
+
+                    var roleOption = document.createElement("option");
+                        roleOption.value = -1;
+                        roleOption.innerHTML = "No Access";
+
+                        if (!member.role)
+                            roleOption.selected = true;
+
+                        roleSelector.appendChild(roleOption);
+
+                    data2.appendChild(roleSelector);
+                } else {
+                    if (member.role == undefined)
+                        data2.innerHTML = "No Access";
+                    else if (member.role == 0)
+                        data2.innerHTML = "Owner";
+                    else
+                        data2.innerHTML = member.role.name;
+                }
+
+                name.innerHTML = member.user.username;
+
+                data1.appendChild(avatar);
+                data1.appendChild(name);
+
+                if (member.authorizer != -1)
+                    data3.appendChild(authAvatar);
+
+                data3.appendChild(authorizer)
+                data4.appendChild(action1Link);
+
+                row.appendChild(data1);
+                row.appendChild(data2);
+                row.appendChild(data3);
+                row.appendChild(data4);
+                $("#members")[0].appendChild(row); // Add the option to the selector.
+            });
+        }
+
+        function UpdateRoles(role_list)
+        {
+            console.log(role_list);
+
+            $("#members")[0].innerHTML = ""; // Clear it.
+
+            role_list.forEach((role) => {
+                var row = document.createElement("tr"), data1 = document.createElement("td"), data2 = document.createElement("td"), data3 = document.createElement("td"), data4 = document.createElement("td"), roleSelector = document.createElement("select"), avatar = document.createElement("img"), name = document.createElement("span");
+
+                var action1Link = document.createElement("a");
+                action1Link.href = "#";
+
+                action1Link.onclick = () => {
+                    DeleteRole(role.roleId);
+                }
+                
+                var action1 = document.createElement("i");
+                action1.className = "fas fa-times";
+
+                action1Link.appendChild(action1);
+                
+                name.innerHTML = role.name;
+
+                data1.appendChild(name);
+
+                data4.appendChild(action1Link);
+
+                row.appendChild(data1);
+                row.appendChild(data2);
+                row.appendChild(data3);
+                row.appendChild(data4);
+                $("#members")[0].appendChild(row); // Add the option to the selector.
+            });
+
+            var row = document.createElement("tr"), data1 = document.createElement("td"), data2 = document.createElement("td"), data3 = document.createElement("td"), data4 = document.createElement("td"), roleSelector = document.createElement("select"), avatar = document.createElement("img"), name = document.createElement("input");
+
+            var action1Link = document.createElement("a");
+            action1Link.href = "#";
+
+            var action1 = document.createElement("i");
+            action1.className = "fas fa-times";
+
+            action1Link.appendChild(action1);
+
+            name.className = "form-control";
+            name.id = "role_name";
+
+            name.onkeydown = (event) => {
+                if (event.key != "Enter")
+                    return;
+
+                AddRole($("#role_name")[0].value);
+            }
+
+            data1.appendChild(name);
+
+            row.appendChild(data1);
+            row.appendChild(data2);
+            row.appendChild(data3);
+            row.appendChild(data4);
+            $("#members")[0].appendChild(row); // Add the option to the selector.
+        }
+
+        function AddUser(id)
+        {
+            $.ajax({
+                url: `/guild/${server.id}/permissions/add`,
+                method: "POST",
+                data: {user: id, token: getCookie("token")}
+            }).done((data) => {
+                console.log(data);
+                FetchServer(window.location.href.split("/")[4]);
+                SearchUser($("#user_search")[0].value)
+            });
+        }
+        
+        function RemoveUser(id)
+        {
+            $.ajax({
+                url: `/guild/${server.id}/permissions/remove`,
+                method: "POST",
+                data: {user: id, token: getCookie("token")}
+            }).done((data) => {
+                console.log(data);
+                FetchServer(window.location.href.split("/")[4]);
+                SearchUser($("#user_search")[0].value)
+            });
+        }
+
+        function RenderRoles() 
+        {
+            $("#user")[0].innerHTML = "Name";
+            $("#role")[0].innerHTML = "Permissions";
+            $("#auth_by")[0].innerHTML = "Created By";
+            $("#user_search")[0].style.display = "none";
+            UpdateRoles(roles);
+        }
+
+        function RenderUsers() 
+        {
+            $("#user")[0].innerHTML = "User";
+            $("#role")[0].innerHTML = "Role";
+            $("#auth_by")[0].innerHTML = "Authorized By";
+            $("#user_search")[0].style.display = "block";
+
+            UpdateMembers(members);
+        }
+
+        function UpdateSearchMembers(member_list)
+        {
+            $("#smembers")[0].innerHTML = ""; // Clear it.
+
+            member_list.forEach((member) => {
+                var server = document.createElement("div"), link = document.createElement("a"), img = document.createElement("img"), overlay = document.createElement("div"), overlay_text = document.createElement("span"); // Create an option.
+                server.className = "col-sm-2 box small"; // Set the name.
+                img.src = member.user.avatar.length > 1 ? `https://cdn.discordapp.com/avatars/${member.user.id}/${member.user.avatar}.png` : `https://cdn.discordapp.com/embed/avatars/${member.user.avatar}.png`; // Set the icon to the icon URL.
+                img.width = 128;
+
+                server.onclick = () =>{
+                    AddUser(member.user.id);
+                }
+
+                overlay_text.innerHTML = `${member.user.username}#${member.user.discriminator}`; // Set the overlay text.
+                overlay.className = "overlay"; // Create the overlay class.
+
+                link.appendChild(img); // Add the server.
+                link.appendChild(overlay); // Add the overlay.
+                server.appendChild(link); // Add the link.
+                $("#smembers")[0].appendChild(server); // Add the option to the selector.
+            });
+        }
+
+        function openSettings()
+        {
+            window.location.href = `http://${window.location.hostname}:${window.location.port}/manage/${server.id}/settings`;
+        }
+
+        FetchServer(window.location.href.split("/")[4]);
+    </script>
+</head>
+
+<body class="container-dark">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark-theme">
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+            <ul class="navbar-nav mr-auto">
+                    <li class="nav-item">
+                            <a class="nav-link" href="/"><i class="fas fa-arrow-left"></i></a>
+                        </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#" onclick="GotoHome()"><i class="fas fa-home"></i></a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#"><i class="fas fa-users"></i></a>
+                </li>
+                <li class="nav-item active">
+                    <a class="nav-link" href="#"><i class="fas fa-user-friends"></i></a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#" onclick="openSettings()"><i class="fas fa-cog"></i></a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#" onclick="ReSync()"><i id="syncIcon" class="fas fa-sync"></i></a>
+                </li>
+            </ul>
+            <form class="form-inline my-2 my-lg-0">
+                <div class="dropdown">
+                    <button class="btn nav-dark-theme dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        <span class="user"><img src="avatar.png" class="user-avatar"/></span>
+                    </button>
+                    <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                        <a class="dropdown-item" href="#" onclick="Logout()">Logout</a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </nav>
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-sm">
+                <div class="btn-group" style="width: 100%; margin-bottom: 2px;" role="group" aria-label="Basic example">
+                    <button type="button" class="btn btn-secondary" onclick="RenderUsers()">Users</button>
+                    <button type="button" class="btn btn-secondary" onclick="RenderRoles()">Roles</button>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-sm">
+                <input class="form-control" id="user_search" type="search" onkeyup="SearchUser(this.value)" placeholder="Add a User..."/><br>
+            </div>
+        </div>
+        <div style="padding-left: 3%; margin-bottom: 8px; height: 48px;" class="row" id="smembers"></div>
+        <div class="row">
+            <table class="table table-dark">
+                <thead>
+                  <tr>
+                    <th id="user">User</th>
+                    <th id="role">Role</th>
+                    <th id="auth_by">Authorized By</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="members">
+                </tbody>
+              </table>
+        </div>
+    </div>
+
+    <div id="manage_user" class="modal" tabindex="-1" role="dialog">
+            <div class="modal-dialog" role="document">
+              <div class="modal-content">
+                <div class="modal-body">
+                    <div id="error" style="display: none" class="alert alert-danger" role="alert"></div>
+
+                    <div class="form-group">
+                        <label>Nickname</label>
+                        <input id="user_nickname" class="form-control" placeholder="???"/>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Roles</label><br>
+                        <span id="role_list">
+                        </span>
+
+                        <span class="dropdown" id="role_editor">
+                            <button type="button" class="btn btn-secondary" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                <i class="fas fa-plus"></i>
+                            </button>
+
+                            <div class="dropdown-menu" id="adding_roles" style="overflow-y: auto; height: 90vh" aria-labelledby="dropdownMenuButton">
+                            </div>
+                        </span>
+                    </div>
+    
+                    <button class="btn btn-danger" onclick="KickMember()">Kick</button>
+                    <button class="btn btn-danger">Ban</button>
+                </div>
+                <div class="modal-footer">
+                  <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                  <button type="button" class="btn btn-primary" onclick="ApplyChanges()">Save changes</button>
+                </div>
+              </div>
+            </div>
+          </div>
+</body>
+
+</html>
